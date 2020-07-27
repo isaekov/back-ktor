@@ -1,36 +1,65 @@
 package ru.hwru.server.routing
 
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import entity.DataSource
+import entity.Post
 import io.ktor.application.call
-import io.ktor.gson.GsonConverter
-import io.ktor.http.ContentType
+import io.ktor.features.NotFoundException
+import io.ktor.features.ParameterConversionException
+import io.ktor.http.HttpStatusCode
+import io.ktor.request.receive
 import io.ktor.response.respond
-import io.ktor.response.respondText
-import io.ktor.routing.Routing
-import io.ktor.routing.get
-import io.ktor.routing.route
+import io.ktor.routing.*
 import io.ktor.util.KtorExperimentalAPI
 import org.kodein.di.generic.instance
 import org.kodein.di.ktor.kodein
 import ru.hwru.server.repository.post.PostRepository
-import ru.hwru.server.repository.post.PostRepositoryImplementation
 
 
 @KtorExperimentalAPI
 fun Routing.api() {
-        val repository by kodein().instance<PostRepository>()
+    val repository by kodein().instance<PostRepository>()
 
-        route("/api") {
+    route("/api") {
+        get {
+            val a = repository.getAll().map {
+                it
+            }
+            call.respond(a)
+        }
 
-            get {
-                val a = repository.getAll().map {
-                    it
-                }
-                call.respond(a)
+        get("/{id}") {
+            val id = call.parameters["id"]?.toLongOrNull() ?: throw ParameterConversionException("id", "Long")
+            val response = repository.getId(id) ?: throw NotFoundException()
+            call.respond(response)
+        }
+
+        post("/add-post") {
+            val clientData = call.receive<Post>()
+            val response = repository.add(clientData)
+            call.respond(response)
+        }
+
+        delete("/{id}") {
+            val id = call.parameters["id"]?.toLongOrNull() ?: throw ParameterConversionException("id", "Long")
+            repository.deleteById(id)
+            call.respond(HttpStatusCode.NoContent)
+        }
+
+        post("/update/{id}") {
+            val id = call.parameters["id"]?.toLongOrNull() ?: throw ParameterConversionException("id", "Long")
+            val clientData = call.receive<Post>()
+            val response = repository.updateById(id = id, data = clientData)
+            call.respond(response)
+        }
+
+        post("/forward/{id}") {
+            val id = call.parameters["id"]?.toLongOrNull() ?: throw ParameterConversionException("id", "Long")
+            val me = "Current Author"
+            val response = repository.forwardPost(id = id, author = me);
+            if (response != null) {
+                call.respond(response)
             }
         }
+    }
 }
 
 

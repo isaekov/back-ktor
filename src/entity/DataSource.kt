@@ -81,7 +81,7 @@ class DataSource {
                     address = "Kazan",
                     adHead = "Google",
                     adImageContent = "https://www.gstatic.com/webp/gallery/5.webp",
-                    repostMe = true,
+                    forwardMe = true,
                     postType = PostType.AD_POST,
                     videoUrl = "https://www.krugosvet.ru/enc/strany_mira/IRLANDSKAYA_RESPUBLIKA.html"
 
@@ -103,7 +103,7 @@ class DataSource {
                     image = "https://picsum.photos/200",
                     address = "Kazan",
                     adImageContent = "https://img.youtube.com/vi/WhWc3b3KhnY/hqdefault.jpg",
-                    repostMe = true,
+                    forwardMe = true,
                     postType = PostType.VIDEO_POST,
                     videoUrl = "https://www.youtube.com/watch?v=WhWc3b3KhnY"
 
@@ -124,7 +124,7 @@ class DataSource {
                     shareMe = false,
                     image = "https://picsum.photos/200",
                     address = "Москва",
-                    repostMe = true,
+                    forwardMe = true,
                     postType = PostType.EVENT_POST,
                     coordinates = CoordinateLocation(latitude = "123124", longitude = "3421343")
 

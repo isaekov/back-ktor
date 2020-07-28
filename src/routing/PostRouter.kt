@@ -77,14 +77,6 @@ fun Routing.api() {
             val response = repository.share(id)
             call.respond(response)
         }
-
-        post("/share/{id}") {
-            val id = call.parameters["id"]?.toLongOrNull() ?: throw ParameterConversionException("id", "Long")
-            val response = repository.share(id)
-            call.respond(response)
-        }
-
-
     }
 }
 

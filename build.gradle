@@ -13,7 +13,9 @@ apply plugin: 'application'
 
 group 'ru.hwru.server'
 version '0.0.1'
-mainClassName = "io.ktor.server.netty.EngineMain"
+application {
+    mainClassName = 'ru.hwru.server.ApplicationKt'
+}
 
 sourceSets {
     main.kotlin.srcDirs = main.java.srcDirs = ['src']

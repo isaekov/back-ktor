@@ -26,9 +26,9 @@ fun Routing.api() {
             call.respond(a)
         }
 
-        get("/{id}") {
+        get("/post/{id}") {
             val id = call.parameters["id"]?.toLongOrNull() ?: throw ParameterConversionException("id", "Long")
-            val response = repository.getId(id) ?: throw NotFoundException()
+            val response = repository.getById(id) ?: throw NotFoundException()
             call.respond(response)
         }
 
@@ -38,7 +38,7 @@ fun Routing.api() {
             call.respond(response)
         }
 
-        delete("/{id}") {
+        delete("/delete/{id}") {
             val id = call.parameters["id"]?.toLongOrNull() ?: throw ParameterConversionException("id", "Long")
             repository.deleteById(id)
             call.respond(HttpStatusCode.NoContent)
@@ -59,6 +59,32 @@ fun Routing.api() {
                 call.respond(response)
             }
         }
+
+        post("/like/{id}") {
+            val id = call.parameters["id"]?.toLongOrNull() ?: throw ParameterConversionException("id", "Long")
+            val response = repository.like(id)
+             call.respond(response)
+        }
+
+        post("/dislike/{id}") {
+            val id = call.parameters["id"]?.toLongOrNull() ?: throw ParameterConversionException("id", "Long")
+            val response = repository.dislike(id)
+            call.respond(response)
+        }
+
+        post("/share/{id}") {
+            val id = call.parameters["id"]?.toLongOrNull() ?: throw ParameterConversionException("id", "Long")
+            val response = repository.share(id)
+            call.respond(response)
+        }
+
+        post("/share/{id}") {
+            val id = call.parameters["id"]?.toLongOrNull() ?: throw ParameterConversionException("id", "Long")
+            val response = repository.share(id)
+            call.respond(response)
+        }
+
+
     }
 }
 

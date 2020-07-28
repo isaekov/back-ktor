@@ -3,6 +3,7 @@ package ru.hwru.server.repository.post
 import entity.DataSource
 import entity.Post
 import io.ktor.features.NotFoundException
+import io.ktor.http.HttpStatusCode
 import io.ktor.util.KtorExperimentalAPI
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -18,76 +19,85 @@ class PostRepositoryImplementation : PostRepository {
     }
 
     @KtorExperimentalAPI
-    override suspend fun like(id: Long): Post? {
-        val postId = post.indexOfFirst { it.id == id }
-        val currentPost = post[postId]
-        if (postId > 0) {
-            if (currentPost.likeCount > 0) {
-                currentPost.likeCount = +1
-                if (!currentPost.likeMe) {
-                    currentPost.likeMe = true
+    override suspend fun like(id: Long): Post {
+        mutex.withLock {
+            return when (val postId = post.indexOfFirst { it.id == id }) {
+                -1 -> {
+                    throw NotFoundException()
+                }
+                else -> {
+                    val currentPost = post[postId]
+                    currentPost.likeCount = +1
+                    if (!currentPost.likeMe) {
+                        currentPost.likeMe = true
+                    }
+                    post[postId]
                 }
             }
-
-        } else {
-            throw NotFoundException("Нет токого поста")
         }
-        return currentPost
     }
-
     @KtorExperimentalAPI
-    override suspend fun dislike(id: Long): Post? {
-        val postId = post.indexOfFirst { it.id == id }
-        val currentPost = post[postId]
-        if (postId > 0) {
-            if (currentPost.likeCount > 0) {
-                currentPost.likeCount = -1
-                if (currentPost.likeMe) {
-                    currentPost.likeMe = false
+    override suspend fun dislike(id: Long): Post {
+        mutex.withLock {
+            return when (val postId = post.indexOfFirst { it.id == id }) {
+                -1 -> {
+                    throw NotFoundException()
+                }
+                else -> {
+                    val currentPost = post[postId]
+                    currentPost.likeCount = -1
+                    if (!currentPost.likeMe) {
+                        currentPost.likeMe = false
+                    }
+                    post[postId]
                 }
             }
-
-        } else {
-            throw NotFoundException("Нет токого поста")
         }
-        return currentPost
     }
-
     @KtorExperimentalAPI
-    override suspend fun share(id: Long): Post? {
-        val postId = post.indexOfFirst { it.id == id }
-        if (postId > 0) {
-            if (!post[postId].shareMe) {
-                post[postId].shareCount = +1
-                post[postId].shareMe = true
+    override suspend fun share(id: Long): Post {
+        mutex.withLock {
+            return when (val postId = post.indexOfFirst { it.id == id }) {
+                -1 -> {
+                    throw NotFoundException()
+                }
+                else -> {
+                    val currentPost = post[postId]
+                    currentPost.shareCount = +1
+                    if (!currentPost.shareMe) {
+                        currentPost.shareMe = true
+                    }
+                    post[postId]
+                }
             }
-        } else {
-            throw NotFoundException("Нет токого поста")
         }
-        return post[postId]
     }
-
     @KtorExperimentalAPI
-    override suspend fun forwardPost(id: Long, author: String): Post? {
-        val source = getId(id) ?: throw NotFoundException("Запись не найдена")
-        val newPost = Post(
-            id = getLastId() + 1,
-            authorName = author,
-            createDate = "123412342",
-            post = source
-        )
-        add(newPost);
-        return post.last()
+    override suspend fun forwardPost(id: Long, author: String): Post {
+        mutex.withLock {
+            val source = post.find { it.id == id }
+            val newPost = Post(
+                id = getLastId() + 1,
+                authorName = author,
+                createDate = "123412342",
+                post = source
+            )
+            post.add(newPost);
+            return post.last()
+        }
     }
-
+    @KtorExperimentalAPI
     override suspend fun getAll(): List<Post> {
-        return post
+        mutex.withLock {
+            return post
+        }
     }
-
-    override suspend fun getId(id: Long): Post? {
-        return post.find { it.id == id }
+    @KtorExperimentalAPI
+    override suspend fun getById(id: Long): Post? {
+        mutex.withLock {
+            return post.find { it.id == id }
+        }
     }
-
     @KtorExperimentalAPI
     override suspend fun updateById(id: Long, data: Post): Post {
         return when (val index = post.indexOfFirst { it.id == id }) {
@@ -102,7 +112,7 @@ class PostRepositoryImplementation : PostRepository {
             }
         }
     }
-
+    @KtorExperimentalAPI
     override suspend fun add(data: Post): Post {
         data.id = getLastId() + 1
         val newData = data.copy()
@@ -112,7 +122,7 @@ class PostRepositoryImplementation : PostRepository {
             throw Throwable("Данные не сохранены")
         }
     }
-
+    @KtorExperimentalAPI
     override suspend fun deleteById(id: Long) {
         post.removeIf { it.id == id }
     }

@@ -12,4 +12,3 @@
 <li>POST <code>/api/share/{id} </code>- шаринг поста</li>
 </ol>
 
-[Ссылка на выложенное приложение](https://crud-netology.herokuapp.com/api) 

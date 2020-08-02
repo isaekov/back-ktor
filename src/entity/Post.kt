@@ -23,3 +23,5 @@ data class Post(
     val videoUrl: String? = null
 
 )
+
+interface Attachment

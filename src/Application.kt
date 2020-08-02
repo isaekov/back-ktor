@@ -4,6 +4,8 @@ import com.google.gson.ExclusionStrategy
 import com.google.gson.FieldAttributes
 import entity.Post
 import io.ktor.application.*
+import io.ktor.auth.Authentication
+import io.ktor.auth.jwt.jwt
 import io.ktor.features.ContentNegotiation
 import io.ktor.features.NotFoundException
 import io.ktor.features.ParameterConversionException
@@ -11,16 +13,24 @@ import io.ktor.features.StatusPages
 import io.ktor.gson.gson
 import io.ktor.http.HttpStatusCode
 import io.ktor.response.respond
-
 import io.ktor.routing.Routing
 import io.ktor.server.cio.EngineMain
 import io.ktor.util.KtorExperimentalAPI
+import kotlinx.coroutines.runBlocking
 import org.kodein.di.generic.bind
+import org.kodein.di.generic.eagerSingleton
+import org.kodein.di.generic.instance
 import org.kodein.di.generic.singleton
 import org.kodein.di.ktor.KodeinFeature
+import org.kodein.di.ktor.kodein
 import ru.hwru.server.repository.post.PostRepository
 import ru.hwru.server.repository.post.PostRepositoryImplementation
+import ru.hwru.server.repository.user.UserRepository
+import ru.hwru.server.repository.user.UserRepositoryImplementation
 import ru.hwru.server.routing.api
+import ru.hwru.server.service.FileService
+import ru.hwru.server.service.JWTTokenService
+import ru.hwru.server.service.UserService
 
 fun main(args: Array<String>) {
     EngineMain.main(args)
@@ -49,6 +59,19 @@ fun Application.module(testing: Boolean = false) {
         }
     }
 
+    install(Authentication) {
+        jwt("jwt") {
+            val jwtService by kodein().instance<JWTTokenService>()
+            verifier(jwtService.verifier)
+            val userService by kodein().instance<UserService>()
+
+            validate {
+                val id = it.payload.getClaim("id").asLong()
+                userService.getModelById(id)
+            }
+        }
+    }
+
     install(StatusPages) {
         exception<NotImplementedError> { e ->
             call.respond(HttpStatusCode.NotImplemented)
@@ -69,6 +92,17 @@ fun Application.module(testing: Boolean = false) {
     }
     install(KodeinFeature) {
         bind<PostRepository>() with singleton { PostRepositoryImplementation() }
+        bind<JWTTokenService>() with eagerSingleton { JWTTokenService() }
+        bind<UserRepository>() with eagerSingleton { UserRepositoryImplementation() }
+        bind<FileService>() with eagerSingleton { FileService(instance(tag = "upload-dir")) }
+        bind<UserService>() with eagerSingleton {
+            UserService(instance(), instance(), instance()).apply {
+                runBlocking {
+                    this@apply.save("ildar", "123")
+                    this@apply.save("man", "123")
+                }
+            }
+        }
     }
 
     install(Routing) {

@@ -3,7 +3,7 @@
 
 <li>GET <code>/api</code>- список всех постов</li>
 <li> GET <code>/api/post/{id}</code> - получить пост с конкретным id</li>
-<li>POST <code>/api/add-post</code> - создать новый пост</li>
+<li>POST <code>/api/add/</code> - создать новый пост</li>
 <li>POST <code>/api/update/{id}</code> - отредактировать пост</li>
 <li>DELETE <code>/api/delete/{id}</code> - удалить пост</li>
 <li>POST <code>/api/like/{id}</code> - лайк</li>

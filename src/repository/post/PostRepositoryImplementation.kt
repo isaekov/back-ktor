@@ -27,11 +27,15 @@ class PostRepositoryImplementation : PostRepository {
                 }
                 else -> {
                     val currentPost = post[postId]
-                    currentPost.likeCount = +1
-                    if (!currentPost.likeMe) {
-                        currentPost.likeMe = true
+                    val likeMe = !currentPost.likeMe;
+                    val copy = currentPost.copy(likeCount = currentPost.likeCount + 1, likeMe = likeMe)
+                    try {
+                        post[postId] = copy
+                    } catch (e: ArrayIndexOutOfBoundsException) {
+                        println("size: ${post.size}")
+                        println(postId)
                     }
-                    post[postId]
+                    copy
                 }
             }
         }
@@ -45,11 +49,15 @@ class PostRepositoryImplementation : PostRepository {
                 }
                 else -> {
                     val currentPost = post[postId]
-                    currentPost.likeCount = -1
-                    if (!currentPost.likeMe) {
-                        currentPost.likeMe = false
+                    val likeMe = !currentPost.likeMe;
+                    val copy = currentPost.copy(likeCount = currentPost.likeCount - 1, likeMe = likeMe)
+                    try {
+                        post[postId] = copy
+                    } catch (e: ArrayIndexOutOfBoundsException) {
+                        println("size: ${post.size}")
+                        println(postId)
                     }
-                    post[postId]
+                    copy
                 }
             }
         }
@@ -63,11 +71,15 @@ class PostRepositoryImplementation : PostRepository {
                 }
                 else -> {
                     val currentPost = post[postId]
-                    currentPost.shareCount = +1
-                    if (!currentPost.shareMe) {
-                        currentPost.shareMe = true
+                    val shareMe = !currentPost.shareMe
+                    val copy = currentPost.copy(shareCount = currentPost.likeCount - 1, shareMe = shareMe)
+                    try {
+                        post[postId] = copy
+                    } catch (e: ArrayIndexOutOfBoundsException) {
+                        println("size: ${post.size}")
+                        println(postId)
                     }
-                    post[postId]
+                    copy
                 }
             }
         }
@@ -89,7 +101,7 @@ class PostRepositoryImplementation : PostRepository {
     @KtorExperimentalAPI
     override suspend fun getAll(): List<Post> {
         mutex.withLock {
-            return post
+            return post.toList()
         }
     }
     @KtorExperimentalAPI
@@ -100,31 +112,33 @@ class PostRepositoryImplementation : PostRepository {
     }
     @KtorExperimentalAPI
     override suspend fun updateById(id: Long, data: Post): Post {
-        return when (val index = post.indexOfFirst { it.id == id }) {
-            -1 -> {
-                throw NotFoundException("Нет такой записи")
-            }
-            else -> {
-                data.id = id
-                val updatePost = data.copy()
-                post[index] = updatePost
-                updatePost
+        mutex.withLock {
+            return when (val index = post.indexOfFirst { it.id == id }) {
+                -1 -> {
+                    throw NotFoundException("Нет такой записи")
+                }
+                else -> {
+                    post[index] = data
+                    data
+                }
             }
         }
     }
     @KtorExperimentalAPI
     override suspend fun add(data: Post): Post {
-        data.id = getLastId() + 1
-        val newData = data.copy()
-        if (post.add(newData)) {
-            return newData
-        } else {
-            throw Throwable("Данные не сохранены")
+        mutex.withLock {
+            val copy = data.copy(id = getLastId() + 1)
+            post.add(copy)
+            return copy
         }
     }
+
+
     @KtorExperimentalAPI
     override suspend fun deleteById(id: Long) {
-        post.removeIf { it.id == id }
+        mutex.withLock {
+            post.removeIf { it.id == id }
+        }
     }
 
     private fun getLastId(): Long {

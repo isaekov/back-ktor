@@ -34,10 +34,10 @@ fun main(args: Array<String>): Unit = io.ktor.server.cio.EngineMain.main(args)
 @KtorExperimentalAPI
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
-fun Application.module(testing: Boolean = false) {
+fun Application.module(testing: Boolean = true) {
 
     println(
-        "Папка аплод: " + (environment.config.propertyOrNull("ru.hwru.upload.dir")?.getString() ?: "нету, null")
+        "Папка аплод: " + (environment.config.propertyOrNull("crud.upload.dir")?.getString() ?: "нету, null")
     )
 
     install(PartialContent) {
@@ -50,37 +50,37 @@ fun Application.module(testing: Boolean = false) {
         gson {
             setPrettyPrinting()
             serializeNulls()
-//                .addDeserializationExclusionStrategy(object : ExclusionStrategy {
-//                    override fun shouldSkipClass(clazz: Class<*>?): Boolean {
-//                        return false
-//                    }
-//
-//                    override fun shouldSkipField(f: FieldAttributes?): Boolean {
-//                        return if (f != null) {
-//                            (f.declaringClass == Post::class.java && f.name == "id")
-//                        } else false
-//                    }
-//                })
+                .addDeserializationExclusionStrategy(object : ExclusionStrategy {
+                    override fun shouldSkipClass(clazz: Class<*>?): Boolean {
+                        return false
+                    }
+
+                    override fun shouldSkipField(f: FieldAttributes?): Boolean {
+                        return if (f != null) {
+                            (f.declaringClass == Post::class.java && f.name == "id")
+                        } else false
+                    }
+                })
         }
     }
 
     install(KodeinFeature) {
-        constant(tag = "upload-dir") with (environment.config.propertyOrNull("ru.hwru.upload.dir")?.getString()
+        constant(tag = "upload-dir") with (environment.config.propertyOrNull("crud.upload.dir")?.getString()
             ?: throw ConfigurationException("Upload dir is not specified"))
         bind<PasswordEncoder>() with eagerSingleton { BCryptPasswordEncoder() }
         bind<JWTTokenService>() with eagerSingleton { JWTTokenService() }
-        bind<PostRepository>() with singleton { PostRepositoryImplementation() }
+        bind<PostRepositoryImplementation>() with eagerSingleton { PostRepositoryImplementation() }
         bind<PostService>() with singleton { PostService(instance()) }
         bind<FileService>() with eagerSingleton { FileService(instance(tag = "upload-dir")) }
-//        bind<UserRepository>() with eagerSingleton { UserRepositoryInMemoryWithMutexImpl() }
-//        bind<UserService>() with eagerSingleton {
-//            UserService(instance(), instance(), instance()).apply {
-//                runBlocking {
-//                    this@apply.save("ildar", "123")
-//                    this@apply.save("man", "123")
-//                }
-//            }
-//        }
+        bind<UserRepository>() with eagerSingleton { UserRepositoryInMemoryWithMutexImpl() }
+        bind<UserService>() with eagerSingleton {
+            UserService(instance(), instance(), instance()).apply {
+                runBlocking {
+                    this@apply.save("ildar", "123")
+                    this@apply.save("man", "123")
+                }
+            }
+        }
 
         bind<Routing>() with eagerSingleton {
             Routing(
@@ -92,11 +92,10 @@ fun Application.module(testing: Boolean = false) {
         }
 
     install(Authentication) {
-        jwt {
-            val jwtService by kodein().instance<JWTTokenService>()
+        jwt("jwt") {
+            val jwtService = JWTTokenService();
             verifier(jwtService.verifier)
             val userService by kodein().instance<UserService>()
-
             validate {
                 val id = it.payload.getClaim("id").asLong()
                 userService.getModelById(id)
@@ -126,10 +125,10 @@ fun Application.module(testing: Boolean = false) {
 
     }
 
-//    install(io.ktor.routing.Routing) {
-//        val routingV1 by kodein().instance<Routing>()
-//        routingV1.setup(this)
-//    }
+    install(io.ktor.routing.Routing) {
+        val routing by kodein().instance<Routing>()
+        routing.setup(this)
+    }
 }
 
 class AuthenticationException : RuntimeException()

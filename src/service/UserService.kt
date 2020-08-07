@@ -1,12 +1,10 @@
 package ru.hwru.server.service
 
+import io.ktor.features.BadRequestException
 import io.ktor.features.NotFoundException
 import io.ktor.util.KtorExperimentalAPI
 import org.springframework.security.crypto.password.PasswordEncoder
-import ru.hwru.server.dto.user.AuthenticationRequestDto
-import ru.hwru.server.dto.user.AuthenticationResponseDto
-import ru.hwru.server.dto.user.PasswordChangeRequestDto
-import ru.hwru.server.dto.user.UserResponseDto
+import ru.hwru.server.dto.user.*
 import ru.hwru.server.entity.user.UserModel
 import ru.hwru.server.exception.InvalidPasswordException
 import ru.hwru.server.exception.PasswordChangeException
@@ -59,5 +57,15 @@ class UserService(
         // TODO: handle concurrency
         repo.save(UserModel(username = username, password = passwordEncoder.encode(password)))
         return
+    }
+
+    @KtorExperimentalAPI
+    suspend fun register(input: RegistrationRequestDto): RegistrationResponseDto {
+        if (repo.getByUsername(input.username) == null) {
+            repo.save(UserModel(username = input.username, password = passwordEncoder.encode(input.password)))
+            val model = repo.getByUsername(input.username)
+            val token = tokenService.generate(model!!.id)
+            return RegistrationResponseDto(token)
+        } else throw BadRequestException("Пользователь с таким логином уже зарегистрирован")
     }
 }
